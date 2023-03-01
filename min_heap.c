@@ -18,17 +18,21 @@ typedef struct s_vector {
 vector vec(int sz, int def_value){
     vector temp;
     temp.size = 0;
-    temp.cap = 1;
+    temp.cap = 4;
     while(temp.cap < sz) temp.cap <<= 1;
+    temp.cap <<= 1;
     temp.arr = (int*)malloc(temp.cap*sizeof(int));
     temp.def = def_value;
-    for(int i = 0; i < sz; i++) temp.arr[i] = temp.def;
+    for(int i = 0; i < temp.cap; i++) temp.arr[i] = temp.def;
     return temp;
 }
 void push_back(vector* v, int a){
-    if(v->size == v->cap){
+    if(v->size == (v->cap >> 1)){
         v->arr = (int*)realloc(v->arr, 2*v->cap*sizeof(int));
         v->cap <<= 1;
+        for(int i = v->size; i < v->cap; i++){
+            v->arr[i] = v->def;
+        }
     }
     v->arr[v->size] = a;
     v->size++;
@@ -40,19 +44,19 @@ void pop_back(vector* v){
 }
 
 vector tree;
-int le (int n) { return n << 1; }
-int ri (int n) { return n << 1|1; }
-int parent (int n) { return n >> 1; }
+int le (int n) { return (n << 1)+1; }
+int ri (int n) { return (n << 1)+2; }
+int parent (int n) { return (n - 1|1)>>1; }
 void swap(int* x, int* y);
 
-int top(){ return tree.arr[1]; }
+int top(){ return tree.arr[0]; }
 
-int size(){ return (tree.size-1 > 0 ? tree.size-1 : 0) ; }
+int size(){ return tree.size; }
 
 void push(int val){
     push_back(&tree, val);
-    int pos = size();
-    while(parent(pos) != 0 && tree.arr[parent(pos)] > tree.arr[pos]){
+    int pos = size()-1;
+    while(pos != 0 && tree.arr[parent(pos)] > tree.arr[pos]){
         swap(&tree.arr[parent(pos)], &tree.arr[pos]);
         pos = parent(pos);
     }
@@ -60,22 +64,17 @@ void push(int val){
 
 void pop(){
     if(size() == 0) return;
-    swap(&tree.arr[1], &tree.arr[size()]);
+    swap(&tree.arr[0], &tree.arr[size()-1]);
     pop_back(&tree);
-    int pos = 1;
-    while((le(pos) < tree.size && tree.arr[pos] > tree.arr[le(pos)]) ||
-            (ri(pos) < tree.size && tree.arr[pos] > tree.arr[ri(pos)])){
-        if(le(pos) < tree.size && ri(pos) < tree.size){
-            if(tree.arr[ri(pos)] > tree.arr[le(pos)]){
-                swap(&tree.arr[pos], &tree.arr[le(pos)]);
-                pos = le(pos);
-            } else {
-                swap(&tree.arr[pos], &tree.arr[ri(pos)]);
-                pos = ri(pos);
-            }
-        } else if (le(pos) < tree.size){
+    int pos = 0;
+    while(tree.arr[pos] > tree.arr[le(pos)] ||
+            tree.arr[pos] > tree.arr[ri(pos)]){
+        if(tree.arr[ri(pos)] > tree.arr[le(pos)]){
             swap(&tree.arr[pos], &tree.arr[le(pos)]);
             pos = le(pos);
+        } else {
+            swap(&tree.arr[pos], &tree.arr[ri(pos)]);
+            pos = ri(pos);
         }
     }
 }
@@ -85,8 +84,7 @@ void placeholder();
 
 int main(){
     clear_screen;
-    tree = vec(2, neutral);
-    push_back(&tree, tree.def);
+    tree = vec(0, neutral);
     placeholder();
     while(1){
         int op;
@@ -103,8 +101,8 @@ int main(){
             printf("Number to insert: ");
             int nu;
             scanf("%d", &nu);
-            placeholder();
-            if(1 || size() > 0){
+            if(size() > 0){
+                placeholder();
                 printf("Tree before insertion:\n");
                 print_tree();
             }
@@ -121,11 +119,7 @@ int main(){
                 placeholder();
                 continue;
             }
-            if(size() > 0){
-                printf("Min: %d\n", top());
-            } else {
-                printf("Min: None\n");
-            }
+            printf("Min: %d\n", top());
             placeholder();
         } else if ( op == 3 ){
             clear_screen;
@@ -142,7 +136,11 @@ int main(){
             pop();
             printf("Tree after removing:\n\n");
             print_tree();
-            printf("\nNew min: %d\n", top());
+            if(size() > 0){
+                printf("New min: %d\n", top());
+            } else {
+                printf("New min: None\n");
+            }
             placeholder();
         } else if ( op == 4 ){
             clear_screen;
@@ -162,14 +160,13 @@ int main(){
 }
 
 void print_tree(){
-    int it = 1, idx = 0;
     int n = size();
     int ts = 1;
     while((ts << 1) <= n) ts <<= 1;
-    int total = 1;
+    int total = 0;
     for(int qt = 1; qt <= ts; qt <<= 1){
         for(int i = 0; i < qt; i++){
-            if(total > n) printf("- ");
+            if(total >= n) printf("- ");
             else printf("%d ", tree.arr[total]);
             total++;
         }

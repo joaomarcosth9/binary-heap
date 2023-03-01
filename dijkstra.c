@@ -29,17 +29,21 @@ typedef struct s_vector {
 vector vec(int sz, pair def_value){
     vector temp;
     temp.size = 0;
-    temp.cap = 1;
+    temp.cap = 4;
     while(temp.cap < sz) temp.cap <<= 1;
+    temp.cap <<= 1;
     temp.arr = (pair*)malloc(temp.cap*sizeof(pair));
     temp.def = def_value;
-    for(int i = 0; i < sz; i++) temp.arr[i] = temp.def;
+    for(int i = 0; i < temp.cap; i++) temp.arr[i] = temp.def;
     return temp;
 }
 void push_back(vector* v, pair a){
-    if(v->size == v->cap){
+    if(v->size == (v->cap >> 1)){
         v->arr = (pair*)realloc(v->arr, 2*v->cap*sizeof(pair));
         v->cap <<= 1;
+        for(int i = v->size; i < v->cap; i++){
+            v->arr[i] = v->def;
+        }
     }
     v->arr[v->size] = a;
     v->size++;
@@ -51,42 +55,37 @@ void pop_back(vector* v){
 }
 
 vector tree;
-int le (int n) { return n << 1; }
-int ri (int n) { return n << 1|1; }
-int parent (int n) { return n >> 1; }
+int le (int n) { return (n << 1)+1; }
+int ri (int n) { return (n << 1)+2; }
+int parent (int n) { return (n - 1|1)>>1; }
 
-pair top(){ return tree.arr[1]; }
+pair top(){ return tree.arr[0]; }
 
-int size(){ return tree.size-1; }
+int size(){ return tree.size; }
 
-void push(int u, long long w){
-    if(size() == -1) push_back(&tree, tree.def);
-    pair temp = {u, w};
+void push(int u, long long val){
+    pair temp = {u, val};
     push_back(&tree, temp);
-    int pos = size();
-    while(parent(pos) != 0 && greater(&tree.arr[parent(pos)], &tree.arr[pos])){
+    int pos = size()-1;
+    while(pos != 0 && tree.arr[parent(pos)].second > tree.arr[pos].second){
         swap(&tree.arr[parent(pos)], &tree.arr[pos]);
         pos = parent(pos);
     }
 }
 
 void pop(){
-    swap(&tree.arr[1], &tree.arr[size()]);
+    if(size() == 0) return;
+    swap(&tree.arr[0], &tree.arr[size()-1]);
     pop_back(&tree);
-    int pos = 1;
-    while((le(pos) < tree.size && greater(&tree.arr[pos], &tree.arr[le(pos)])) ||
-            (ri(pos) < tree.size && greater(&tree.arr[pos], &tree.arr[ri(pos)]))){
-        if(le(pos) < tree.size && ri(pos) < tree.size){
-            if(greater(&tree.arr[ri(pos)], &tree.arr[le(pos)])){
-                swap(&tree.arr[pos], &tree.arr[le(pos)]);
-                pos = le(pos);
-            } else {
-                swap(&tree.arr[pos], &tree.arr[ri(pos)]);
-                pos = ri(pos);
-            }
-        } else if (le(pos) < tree.size){
+    int pos = 0;
+    while(tree.arr[pos].second > tree.arr[le(pos)].second ||
+            tree.arr[pos].second > tree.arr[ri(pos)].second){
+        if(tree.arr[ri(pos)].second > tree.arr[le(pos)].second){
             swap(&tree.arr[pos], &tree.arr[le(pos)]);
             pos = le(pos);
+        } else {
+            swap(&tree.arr[pos], &tree.arr[ri(pos)]);
+            pos = ri(pos);
         }
     }
 }
@@ -97,9 +96,9 @@ vector adj[100005];
 
 int main(){
     int n, m; scanf("%d %d", &n, &m);
-    tree = vec(4, neutral);
+    tree = vec(0, neutral);
     for(int i = 0; i <= n; i++){
-        adj[i] = vec(4, def_pair);
+        adj[i] = vec(0, def_pair);
         dis[i] = from[i] = INF;
     }
     for(int i = 0; i < m; i++){
@@ -147,3 +146,4 @@ int main(){
     printf("\n");
     return 0;
 }
+
