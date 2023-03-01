@@ -1,5 +1,5 @@
 # binary-heap
-A binary heap (min heap) implementation in C. I've implemented some C++ like structures like `std::pair` and `std::vector` to help me.
+A binary heap (min heap) implementation in C. I've implemented some C++ like structures such as `std::pair` and `std::vector` to help me.
 
 Heap operations time complexity:
 - Push: O(log(n))
